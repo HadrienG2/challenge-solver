@@ -100,12 +100,12 @@ fn main() {
         // is filled with the largest number of ones.
         loop {
             // Extract target column properties from the current DB entry
+            assert!(dest_db_idx < N,
+                    "Cannot reduce number of ones in any column in a single \
+                     XOR step, giving up!");
             dest_col_idx = col_idx_and_num_ones[dest_db_idx].0;
             let dest_col = matrix[dest_col_idx];
             let dest_num_ones = col_idx_and_num_ones[dest_db_idx].1;
-            assert!(dest_num_ones > 1,
-                    "Cannot reduce number of ones in any column in a single \
-                     XOR step, giving up!");
 
             // Next, we investigage "source" columns that we could XOR with this
             // target column, among the ones that have less ones in them.
