@@ -2,9 +2,7 @@ use derive_more::*;
 
 use rand::prelude::*;
 
-use std::{
-    fmt,
-};
+use std::fmt;
 
 
 // Matrix size (up to 16)
