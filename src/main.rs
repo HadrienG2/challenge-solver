@@ -91,27 +91,36 @@ fn main() {
     while col_idx_and_num_ones[0].1 > 1 {
         // Ultimately, we want to find the best XOR, that is, the one that
         // removes the the most "ones" from a column of the matrix
-        let mut dest_db_idx = 0;
-        let mut dest_col_idx;
+        let mut best_dest_db_idx = 0;
+        let mut best_dest_col_idx = 0;
         let mut best_src_col_idx = 0;
         let mut best_removed_ones = i32::MIN;
 
         // We investigate "destination" columns, starting from the one that
         // is filled with the largest number of ones.
-        loop {
-            // Extract target column properties from the current DB entry
-            assert!(dest_db_idx < N,
-                    "Cannot reduce number of ones in any column in a single \
-                     XOR step, giving up!");
-            dest_col_idx = col_idx_and_num_ones[dest_db_idx].0;
-            let dest_col = matrix[dest_col_idx];
+        for dest_db_idx in 0..N {
+            // Once we reach a destination column that contains less or as much
+            // ones as our best ones-removal guess, plus one, we can stop.
+            //
+            // If the matrix is invertible the largest number of ones that we
+            // can clear by XORing another column into a column with X ones
+            // is X-1. Otherwise, the source column is identical to the
+            // destination column, and therefore the matrix is not invertible.
+            //
             let dest_num_ones = col_idx_and_num_ones[dest_db_idx].1;
+            if dest_num_ones as i32 <= best_removed_ones + 1 { break; }
+
+            // Try the next destination column in order of decreasing #ones
+            let dest_col_idx = col_idx_and_num_ones[dest_db_idx].0;
+            let dest_col = matrix[dest_col_idx];
 
             // Next, we investigage "source" columns that we could XOR with this
             // target column, among the ones that have less ones in them.
             for src_db_idx in dest_db_idx+1..N {
                 // Once we reached a source column that contains less or as much
                 // ones than our best ones-removal guess so far, we can stop
+                // looking at other source columns candidates. They will not be
+                // any better than what we already have.
                 let src_num_ones = col_idx_and_num_ones[src_db_idx].1;
                 if src_num_ones as i32 <= best_removed_ones { break; }
 
@@ -126,28 +135,24 @@ fn main() {
                 // If that's better than our best guess so far, this source
                 // column becomes our new best candidate for XORing into dest
                 if num_removed_ones > best_removed_ones {
+                    best_dest_db_idx = dest_db_idx;
+                    best_dest_col_idx = dest_col_idx;
                     best_src_col_idx = src_col_idx;
                     best_removed_ones = num_removed_ones;
                 }
-            }
-
-            // If we managed to find a solution that unsets at least one bit
-            // from the destination, we keep it, otherwise we move to the next
-            // destination column in decreasing order of "most bits set"
-            if best_removed_ones > 0 {
-                break;
-            } else {
-                dest_db_idx += 1;
             }
         }
 
         // At this point, we should have managed to get rid of at least one set
         // bit in the destination column.
-        assert!(best_removed_ones > 0);
+        assert!(best_removed_ones > 0,
+                "Cannot reduce #ones in any column with any XOR, giving up!");
 
         // Apply XOR to the matrix
-        println!("Will apply matrix[{}] ^= matrix[{}]", dest_col_idx, best_src_col_idx);
-        matrix[dest_col_idx] ^= matrix[best_src_col_idx];
+        println!("Will apply matrix[{}] ^= matrix[{}]",
+                 best_dest_col_idx,
+                 best_src_col_idx);
+        matrix[best_dest_col_idx] ^= matrix[best_src_col_idx];
         println!("Matrix is now: {:#?}", matrix);
 
         // Update sorted list of column vs number of ones
@@ -157,7 +162,7 @@ fn main() {
         // just touched must be moved around. But given how low N and M are, we
         // don't really need to speed up this part of the code.
         //
-        col_idx_and_num_ones[dest_db_idx].1 -= best_removed_ones as u32;
+        col_idx_and_num_ones[best_dest_db_idx].1 -= best_removed_ones as u32;
         col_idx_and_num_ones.sort_by(|a, b| b.1.cmp(&a.1));
         println!("(col_idx, num_ones) database: {:?}", col_idx_and_num_ones);
 
