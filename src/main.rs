@@ -94,7 +94,7 @@ fn main() {
         let mut dest_db_idx = 0;
         let mut dest_col_idx;
         let mut best_src_col_idx = 0;
-        let mut best_removed_ones = 0u32;
+        let mut best_removed_ones = i32::MIN;
 
         // We investigate "destination" columns, starting from the one that
         // is filled with the largest number of ones.
@@ -113,7 +113,7 @@ fn main() {
                 // Once we reached a source column that contains less or as much
                 // ones than our best ones-removal guess so far, we can stop
                 let src_num_ones = col_idx_and_num_ones[src_db_idx].1;
-                if src_num_ones <= best_removed_ones { break; }
+                if src_num_ones as i32 <= best_removed_ones { break; }
 
                 // Try XORing our destination column with our source column, see
                 // how many ones that would remove in the destination column
@@ -121,7 +121,7 @@ fn main() {
                 let src_col = matrix[src_col_idx];
                 let xor_result = dest_col ^ src_col;
                 let num_removed_ones =
-                    dest_num_ones.saturating_sub(xor_result.count_ones());
+                    (dest_num_ones as i32) - (xor_result.count_ones() as i32);
 
                 // If that's better than our best guess so far, this source
                 // column becomes our new best candidate for XORing into dest
@@ -134,7 +134,7 @@ fn main() {
             // If we managed to find a solution that unsets at least one bit
             // from the destination, we keep it, otherwise we move to the next
             // destination column in decreasing order of "most bits set"
-            if best_removed_ones != 0 {
+            if best_removed_ones > 0 {
                 break;
             } else {
                 dest_db_idx += 1;
@@ -143,7 +143,7 @@ fn main() {
 
         // At this point, we should have managed to get rid of at least one set
         // bit in the destination column.
-        assert!(best_removed_ones != 0);
+        assert!(best_removed_ones > 0);
 
         // Apply XOR to the matrix
         println!("Will apply matrix[{}] ^= matrix[{}]", dest_col_idx, best_src_col_idx);
@@ -151,9 +151,13 @@ fn main() {
         println!("Matrix is now: {:#?}", matrix);
 
         // Update sorted list of column vs number of ones
-        // (we could do this more efficiently, but given how low the number of
-        // XORs that we need to find is, we don't really need to)
-        col_idx_and_num_ones[dest_db_idx].1 -= best_removed_ones;
+        //
+        // We could do this more efficiently than by using a general sorting
+        // algorithm since the list is mostly sorted, and only the column we
+        // just touched must be moved around. But given how low N and M are, we
+        // don't really need to speed up this part of the code.
+        //
+        col_idx_and_num_ones[dest_db_idx].1 -= best_removed_ones as u32;
         col_idx_and_num_ones.sort_by(|a, b| b.1.cmp(&a.1));
         println!("(col_idx, num_ones) database: {:?}", col_idx_and_num_ones);
 
@@ -163,6 +167,6 @@ fn main() {
 
     // Check if we managed to resolve the problem in few enough XORs.
     assert!(matrix.iter().all(|col| col.count_ones() == 1));
-    println!("Reached permutation of the identity matrix in {} XORs", num_xors);
+    println!("Reached a permutation of identity matrix in {} XORs", num_xors);
     assert!(num_xors <= M);
 }
