@@ -107,11 +107,8 @@ fn main() {
             // destination column if the source column is identical, which means
             // that the matrix is not invertible.
             //
-            let dest_num_ones = col_idx_and_num_ones[dest_db_idx].1;
+            let (dest_col_idx, dest_num_ones) = col_idx_and_num_ones[dest_db_idx];
             if dest_num_ones as i32 <= best_removed_ones + 1 { break; }
-
-            // Try the next destination column in order of decreasing #ones
-            let dest_col_idx = col_idx_and_num_ones[dest_db_idx].0;
             let dest_col = matrix[dest_col_idx];
 
             // Next, we investigate "source" columns that we could XOR into this
@@ -131,13 +128,12 @@ fn main() {
                 // A source column with Y bits set can only clear up to Y bits
                 // in the destination column upon XORing.
                 //
-                let src_num_ones = col_idx_and_num_ones[src_db_idx].1;
+                let (src_col_idx, src_num_ones) = col_idx_and_num_ones[src_db_idx];
                 if src_num_ones as i32 <= best_removed_ones { break; }
+                let src_col = matrix[src_col_idx];
 
                 // Try XORing our destination column with our source column, see
                 // how many ones that would remove in the destination column
-                let src_col_idx = col_idx_and_num_ones[src_db_idx].0;
-                let src_col = matrix[src_col_idx];
                 let xor_result = dest_col ^ src_col;
                 let num_removed_ones =
                     (dest_num_ones as i32) - (xor_result.count_ones() as i32);
