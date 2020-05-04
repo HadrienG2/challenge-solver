@@ -114,8 +114,15 @@ fn main() {
             let dest_col_idx = col_idx_and_num_ones[dest_db_idx].0;
             let dest_col = matrix[dest_col_idx];
 
-            // Next, we investigage "source" columns that we could XOR with this
-            // target column, among the ones that have less ones in them.
+            // Next, we investigate "source" columns that we could XOR into this
+            // target column, among the ones that have less ones in them
+            // (otherwise we can't possibly remove ones by performing the XOR)
+            //
+            // TODO: If we start searching the decision tree deeper, we may need
+            //       to revisit this policy, as for a two-XOR decision we want
+            //       to pick the first XOR that adds the LEAST ones to the
+            //       destination column. Hence adding ones becomes okay.
+            //
             for src_db_idx in dest_db_idx+1..N {
                 // Once we reached a source column that contains less or as much
                 // ones than our best ones-removal guess so far, we can stop
