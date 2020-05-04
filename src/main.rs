@@ -23,10 +23,6 @@ impl BitMatrixCol {
     fn count_ones(&self) -> u32 {
         self.0.count_ones()
     }
-
-    fn row(&self, row_idx: usize) -> bool {
-        self.0 & (1 << row_idx) != 0
-    }
 }
 
 impl fmt::Debug for BitMatrixCol {
@@ -54,44 +50,19 @@ fn main() {
 
     // Randomly XOR columns, keeping the matrix invertible
     println!("Applying column XORs...");
-    let mut inverse_check_buf = matrix.clone();
     let mut rng = rand::thread_rng();
     for _ in 0..M {
-        // Finx a column XOR that keeps the matrix invertible
-        'xor_loop: loop {
-            // Pick two distinct columns at random
-            let src_col_idx = rng.gen_range(0, N);
-            let src_col = matrix[src_col_idx];
-            let dest_col_idx = loop {
-                let dest_col_idx = rng.gen_range(0, N);
-                if dest_col_idx != src_col_idx { break dest_col_idx; }
-            };
+        // Pick two distinct columns at random
+        let src_col_idx = rng.gen_range(0, N);
+        let src_col = matrix[src_col_idx];
+        let dest_col_idx = loop {
+            let dest_col_idx = rng.gen_range(0, N);
+            if dest_col_idx != src_col_idx { break dest_col_idx; }
+        };
 
-            // Make sure that "matrix" remains invertible upon XORing src_col
-            // into dest_col, otherwise we'll pick other columns.
-            inverse_check_buf.copy_from_slice(&matrix[..]);
-            inverse_check_buf[dest_col_idx] ^= src_col;
-            for row in 0..N {
-                let pivot_pos =
-                    inverse_check_buf.iter()
-                                     .position(|&col| col.row(row) == true);
-                let pivot_col_idx = match pivot_pos {
-                    Some(col_idx) => col_idx,
-                    None => continue 'xor_loop,
-                };
-                let pivot_col = inverse_check_buf[pivot_col_idx];
-                for (col_idx, col) in inverse_check_buf.iter_mut().enumerate() {
-                    if col_idx == pivot_col_idx { continue; }
-                    if col.row(row) == false { continue; }
-                    *col ^= pivot_col;
-                }
-            }
-
-            // If the matrix is still invertible with those changes, move on
-            println!("Applying matrix[{}] ^= matrix[{}]", dest_col_idx, src_col_idx);
-            matrix[dest_col_idx] ^= src_col;
-            break;
-        }
+        // XOR source column into destination column
+        println!("Applying matrix[{}] ^= matrix[{}]", dest_col_idx, src_col_idx);
+        matrix[dest_col_idx] ^= src_col;
     }
 
     // Shuffle matrix columns
@@ -191,6 +162,7 @@ fn main() {
     }
 
     // Check if we managed to resolve the problem in few enough XORs.
+    assert!(matrix.iter().all(|col| col.count_ones() == 1));
     println!("Reached permutation of the identity matrix in {} XORs", num_xors);
     assert!(num_xors <= M);
 }
