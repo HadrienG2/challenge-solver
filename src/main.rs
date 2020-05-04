@@ -92,7 +92,6 @@ fn main() {
         // Ultimately, we want to find the best XOR, that is, the one that
         // removes the the most "ones" from a column of the matrix
         let mut best_dest_db_idx = 0;
-        let mut best_dest_col_idx = 0;
         let mut best_src_col_idx = 0;
         let mut best_removed_ones = i32::MIN;
 
@@ -104,8 +103,9 @@ fn main() {
             //
             // If the matrix is invertible, the largest number of ones that we
             // can clear by XORing a "source" column into a "destination" column
-            // with X ones is X-1. Otherwise, the source column is identical to
-            // the destination column, which means the matrix is not invertible.
+            // with X ones is X-1. We can only clear all X bits from the
+            // destination column if the source column is identical, which means
+            // that the matrix is not invertible.
             //
             let dest_num_ones = col_idx_and_num_ones[dest_db_idx].1;
             if dest_num_ones as i32 <= best_removed_ones + 1 { break; }
@@ -115,7 +115,7 @@ fn main() {
             let dest_col = matrix[dest_col_idx];
 
             // Next, we investigate "source" columns that we could XOR into this
-            // target column, among the ones that have less ones in them
+            // destination column, among the ones that have less ones in them
             // (otherwise we can't possibly remove ones by performing the XOR)
             //
             // TODO: If we start searching the decision tree deeper, we may need
@@ -146,7 +146,6 @@ fn main() {
                 // column becomes our new best candidate for XORing into dest
                 if num_removed_ones > best_removed_ones {
                     best_dest_db_idx = dest_db_idx;
-                    best_dest_col_idx = dest_col_idx;
                     best_src_col_idx = src_col_idx;
                     best_removed_ones = num_removed_ones;
                 }
@@ -159,6 +158,7 @@ fn main() {
                 "Cannot reduce #ones in any column with any XOR, giving up!");
 
         // Apply XOR to the matrix
+        let best_dest_col_idx = col_idx_and_num_ones[best_dest_db_idx].0;
         println!("Will apply matrix[{}] ^= matrix[{}]",
                  best_dest_col_idx,
                  best_src_col_idx);
