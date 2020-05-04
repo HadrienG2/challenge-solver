@@ -102,10 +102,10 @@ fn main() {
             // Once we reach a destination column that contains less or as much
             // ones as our best ones-removal guess, plus one, we can stop.
             //
-            // If the matrix is invertible the largest number of ones that we
-            // can clear by XORing another column into a column with X ones
-            // is X-1. Otherwise, the source column is identical to the
-            // destination column, and therefore the matrix is not invertible.
+            // If the matrix is invertible, the largest number of ones that we
+            // can clear by XORing a "source" column into a "destination" column
+            // with X ones is X-1. Otherwise, the source column is identical to
+            // the destination column, which means the matrix is not invertible.
             //
             let dest_num_ones = col_idx_and_num_ones[dest_db_idx].1;
             if dest_num_ones as i32 <= best_removed_ones + 1 { break; }
@@ -119,8 +119,11 @@ fn main() {
             for src_db_idx in dest_db_idx+1..N {
                 // Once we reached a source column that contains less or as much
                 // ones than our best ones-removal guess so far, we can stop
-                // looking at other source columns candidates. They will not be
-                // any better than what we already have.
+                // looking at other source columns candidates.
+                //
+                // A source column with Y bits set can only clear up to Y bits
+                // in the destination column upon XORing.
+                //
                 let src_num_ones = col_idx_and_num_ones[src_db_idx].1;
                 if src_num_ones as i32 <= best_removed_ones { break; }
 
