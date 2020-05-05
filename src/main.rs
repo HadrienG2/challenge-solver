@@ -14,10 +14,12 @@ const N: usize = 12;
 struct BitMatrixCol(u16);
 
 impl BitMatrixCol {
+    /// Initialize a column with one row at 1 and the other rows at 0
     fn one_at(row_idx: usize) -> Self {
         Self(1 << row_idx)
     }
 
+    /// Count how many bits are set in the target column
     fn count_ones(&self) -> u32 {
         self.0.count_ones()
     }
@@ -50,7 +52,7 @@ fn main() {
     println!("Applying column XORs...");
     let mut rng = rand::thread_rng();
     for _ in 0..M {
-        // Pick two distinct columns at random
+        // Pick two _distinct_ columns at random
         let src_col_idx = rng.gen_range(0, N);
         let src_col = matrix[src_col_idx];
         let dest_col_idx = loop {
@@ -71,14 +73,14 @@ fn main() {
 
     // === TRYING TO SOLVE THE PROBLEM ===
 
-    // Build a database of (column index, number of ones in that column) tuples.
+    // Build a database of (column index, number of bits set) tuples.
     let mut col_idx_and_num_ones =
         matrix.iter()
               .map(BitMatrixCol::count_ones)
               .enumerate()
               .collect::<Box<[_]>>();
 
-    // Sort by descending number of ones
+    // Sort by descending number of bits
     col_idx_and_num_ones.sort_by(|a, b| b.1.cmp(&a.1));
     println!("(col_idx, num_ones) database: {:?}", col_idx_and_num_ones);
 
@@ -88,20 +90,21 @@ fn main() {
     let mut num_xors = 0;
     while col_idx_and_num_ones[0].1 > 1 {
         // Ultimately, we want to find the best XOR, that is, the one that
-        // removes the the most "ones" from a column of the matrix
+        // clears the most bits from a column of the matrix
         let mut best_dest_db_idx = 0;
         let mut best_src_col_idx = 0;
         let mut best_removed_ones = i32::MIN;
 
         // We investigate "destination" columns, starting from the one that
-        // is filled with the largest number of ones.
+        // has the largest number of bits set.
         for dest_db_idx in 0..N {
-            // Once we reach a destination column that contains less or as much
-            // ones as our best ones-removal guess, plus one, we can stop.
+            // Once we reach a destination column that has as many bits set
+            // as our best bit-clearing choice pick so far, plus one, we can
+            // stop : we won't manage to do any better.
             //
-            // If the matrix is invertible, the largest number of ones that we
+            // If the matrix is invertible, the largest number of bits that we
             // can clear by XORing a "source" column into a "destination" column
-            // with X ones is X-1. We can only clear all X bits from the
+            // with X bits set is X-1. We can only clear all X bits from the
             // destination column if the source column is identical, which means
             // that the matrix is not invertible.
             //
@@ -110,18 +113,27 @@ fn main() {
             let dest_col = matrix[dest_col_idx];
 
             // Next, we investigate "source" columns that we could XOR into this
-            // destination column, among the ones that have less ones in them
-            // (otherwise we can't possibly remove ones by performing the XOR)
+            // destination column, among the ones that have less bits set.
             //
-            // TODO: If we start searching the decision tree deeper, we may need
-            //       to revisit this policy, as for a two-XOR decision we want
-            //       to pick the first XOR that adds the LEAST ones to the
-            //       destination column. Hence adding ones becomes okay.
+            // The reason why we only need to consider source columns with less
+            // or as many bits set is that...
+            //
+            // - Over the full iteration of dest_db_idx and src_db_idx, we will
+            //   consider all possible pairs of columns.
+            // - Given a pair of columns where one has more bits set than the
+            //   others, it is always as advantageous or more advantageous to do
+            //   the XOR into the column that has more bits set (see issue #1
+            //   for a mathematical proof).
+            //
+            // NOTE: I'm not sure if the above property remains true when we
+            //       start going deeper in the decision tree and considering
+            //       moves composed of two successive XORs. If the code is
+            //       reworked in this direction, that logic may need to change.
             //
             for src_db_idx in dest_db_idx+1..N {
-                // Once we reached a source column that contains less or as much
-                // ones than our best ones-removal guess so far, we can stop
-                // looking at other source columns candidates.
+                // Once we reached a source column that has less or as much bits
+                // set as our best bits-clearing choice so far, we can stop : we
+                // won't find a better source column.
                 //
                 // A source column with Y bits set can only clear up to Y bits
                 // in the destination column upon XORing.
@@ -159,7 +171,7 @@ fn main() {
         matrix[best_dest_col_idx] ^= matrix[best_src_col_idx];
         println!("Matrix is now: {:#?}", matrix);
 
-        // Update sorted list of column vs number of ones
+        // Update sorted list of column index vs number of ones
         //
         // We could do this more efficiently than by using a general sorting
         // algorithm since the list is mostly sorted, and only the column we
