@@ -187,7 +187,8 @@ fn main() {
     }
 
     // Check if we managed to resolve the problem in few enough XORs.
-    assert!(matrix.iter().all(|col| col.count_ones() == 1));
+    assert!(matrix.iter().all(|col| col.count_ones() == 1),
+            "Output is not a permutation of the identity matrix");
     println!("Reached a permutation of identity matrix in {} XORs", num_xors);
-    assert!(num_xors <= M);
+    assert!(num_xors <= M, "Failed to find a solution in <= {} XORs", M);
 }
