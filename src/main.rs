@@ -91,8 +91,8 @@ fn main() {
     while col_idx_and_num_ones[0].1 > 1 {
         // Ultimately, we want to find the best XOR, that is, the one that
         // clears the most bits from a column of the matrix
-        let mut best_dest_db_idx = 0;
-        let mut best_src_col_idx = 0;
+        let mut best_dest_db_idx = usize::MAX;
+        let mut best_src_col_idx = usize::MAX;
         let mut best_removed_ones = i32::MIN;
 
         // We investigate "destination" columns, starting from the one that
