@@ -183,7 +183,11 @@ fn main() {
         // Compared to a deterministic strategy such as picking the first
         // suitable XOR that we observed, the use of randomness gives us a
         // better chance of avoiding infinite loops where we keep toggling the
-        // same bits over and over again...
+        // same bits over and over again.
+        //
+        // NOTE: Could improve upon this strategy by e.g. refraining from
+        //       toggling the same bits twice in a row. But that requires more
+        //       sophisticated tracking of our past actions & their effects.
         //
         if best_removed_ones <= 0 {
             println!("Didn't find a XOR that brings a net benefit, picking one \
