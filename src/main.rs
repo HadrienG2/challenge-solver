@@ -88,12 +88,17 @@ fn main() {
     // bit set per column (which means that we're only one permutation away
     // from the identity matrix).
     let mut num_xors = 0;
+    let mut least_bad_xors = Vec::new();
     while col_idx_and_num_ones[0].1 > 1 {
         // Ultimately, we want to find the best XOR, that is, the one that
         // clears the most bits from a column of the matrix
         let mut best_dest_db_idx = usize::MAX;
         let mut best_src_col_idx = usize::MAX;
         let mut best_removed_ones = i32::MIN;
+
+        // If there is no XOR that clears even a single bit, then as a fallback
+        // strategy we'll perform one of the XORs that set the _least_ bits.
+        least_bad_xors.clear();
 
         // We investigate "destination" columns, starting from the one that
         // has the largest number of bits set.
@@ -148,20 +153,49 @@ fn main() {
                 let num_removed_ones =
                     (dest_num_ones as i32) - (xor_result.count_ones() as i32);
 
-                // If that's better than our best guess so far, this source
-                // column becomes our new best candidate for XORing into dest
+                // Compare this XOR to our best guess(es) so far
                 if num_removed_ones > best_removed_ones {
-                    best_dest_db_idx = dest_db_idx;
-                    best_src_col_idx = src_col_idx;
+                    // OK, it's better. But does it clear any bit yet?
+                    if num_removed_ones > 0 {
+                        // If so, that becomes our new best XOR candidate
+                        best_dest_db_idx = dest_db_idx;
+                        best_src_col_idx = src_col_idx;
+                    } else {
+                        // If not, it's just one of the least bad options among
+                        // which we'll pick if we don't find a single good XOR.
+                        least_bad_xors.clear();
+                        least_bad_xors.push((dest_db_idx, src_col_idx));
+                    }
                     best_removed_ones = num_removed_ones;
+                } else if num_removed_ones == best_removed_ones {
+                    if num_removed_ones <= 0 {
+                        // If we didn't find any XOR that brings a net benefit
+                        // yet, then we keep track of the least bad options.
+                        least_bad_xors.push((dest_db_idx, src_col_idx));
+                    }
                 }
             }
         }
 
-        // At this point, we should have managed to get rid of at least one set
-        // bit in the destination column.
-        assert!(best_removed_ones > 0,
-                "Cannot reduce #ones in any column with any XOR, giving up!");
+        // If, after exploring all possible XORs, we didn't find any that gives
+        // a net benefit, we'll randomly pick one of the least bad ones.
+        //
+        // Compared to a deterministic strategy such as picking the first
+        // suitable XOR that we observed, the use of randomness gives us a
+        // better chance of avoiding infinite loops where we keep toggling the
+        // same bits over and over again...
+        //
+        if best_removed_ones <= 0 {
+            println!("Didn't find a XOR that brings a net benefit, picking one \
+                      of the {} least bad ones (cost {}) at random...",
+                     least_bad_xors.len(),
+                     best_removed_ones);
+            let &(dest_db_idx, src_col_idx) =
+                least_bad_xors.choose(&mut rng)
+                              .expect("There is always one possible XOR");
+            best_dest_db_idx = dest_db_idx;
+            best_src_col_idx = src_col_idx;
+        }
 
         // Apply XOR to the matrix
         let best_dest_col_idx = col_idx_and_num_ones[best_dest_db_idx].0;
