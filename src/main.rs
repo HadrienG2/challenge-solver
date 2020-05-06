@@ -185,9 +185,11 @@ fn main() {
         // better chance of avoiding infinite loops where we keep toggling the
         // same bits over and over again.
         //
-        // NOTE: Could improve upon this strategy by e.g. refraining from
-        //       toggling the same bits twice in a row. But that requires more
-        //       sophisticated tracking of our past actions & their effects.
+        // NOTE: Could improve upon this basic strategy by e.g. refraining from
+        //       toggling the same bits twice in a row, or prioritizing past
+        //       XOR targets as a source or destination of subsequent XORs. But
+        //       that requires more sophisticated tracking of our past actions
+        //       and the effects that they had.
         //
         if best_removed_ones <= 0 {
             println!("Didn't find a XOR that brings a net benefit, picking one \
